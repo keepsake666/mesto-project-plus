@@ -11,10 +11,11 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+mongoose.set("strictQuery", true);
 mongoose.connect('mongodb://127.0.0.1:27017/mestodb');
 app.use((req: IRequestUser, res: Response, next: NextFunction) => {
   req.user = {
-    _id: '63eb6a678890ff9caab7f7fa', // вставьте сюда _id созданного в предыдущем пункте пользователя
+    _id: '63f034e317fd754238610236', // вставьте сюда _id созданного в предыдущем пункте пользователя
   };
 
   next();
