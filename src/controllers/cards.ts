@@ -21,21 +21,25 @@ export const postCards = (req: IRequestUser, res: Response) => {
     });
 };
 
-export const deleteCard = (req: Request, res: Response) => {
+export const deleteCard = (req: IRequestUser, res: Response) => {
   const { id } = req.params;
+  const owner = req.user?._id;
 
   return card.findByIdAndRemove(id)
     .then((cards) => {
       if (!cards) {
         throw new NotFoundError('Карточка с указанным _id не найдена.');
       }
-      res.send({ data: cards });
+      if (owner !== cards.owner.toString()) {
+        throw new NotFoundError('Нет прав на удаление');
+      }
+      return res.send({ data: cards });
     })
     .catch((err) => {
       if (err instanceof Error && err instanceof NotFoundError) {
-        return res.status(404).send({ message: 'Карточка с указанным _id не найдена.' });
+        return res.status(404).send({ message: err.message });
       }
-      res.status(500).send({ message: 'Произошла ошибка' });
+      return res.status(500).send({ message: 'Произошла ошибка' });
     });
 };
 
