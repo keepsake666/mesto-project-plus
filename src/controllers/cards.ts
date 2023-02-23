@@ -1,27 +1,30 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
+import mongoose from 'mongoose';
 import card from '../models/card';
 import { IRequestUser } from '../types/requestUser';
 import NotFoundError from '../errors/notFound';
+import ServerErr from '../errors/server';
+import ValidationErr from '../errors/validate';
+import AuthErr from '../errors/auth';
 
-export const getCards = (req: Request, res: Response) => card.find({})
+export const getCards = (req: Request, res: Response, next: NextFunction) => card.find({})
   .then((cards) => res.send({ data: cards }))
-  .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+  .catch(() => next(new ServerErr('На сервере произошла ошибка')));
 
-export const postCards = (req: IRequestUser, res: Response) => {
+export const postCards = (req: IRequestUser, res: Response, next: NextFunction) => {
   const { name, link } = req.body;
   const id = req.user?._id;
   return card.create({ name, link, owner: id })
     .then((cards) => res.send({ data: cards }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Переданы некорректные данные при создании карточки.' });
-      } else {
-        res.status(500).send({ message: 'Произошла ошибка' });
+        return next(new ValidationErr('Переданы некорректные данные при создании карточки.'));
       }
+      return next(new ServerErr('На сервере произошла ошибка'));
     });
 };
 
-export const deleteCard = (req: IRequestUser, res: Response) => {
+export const deleteCard = (req: IRequestUser, res: Response, next: NextFunction) => {
   const { id } = req.params;
   const owner = req.user?._id;
 
@@ -31,25 +34,27 @@ export const deleteCard = (req: IRequestUser, res: Response) => {
         throw new NotFoundError('Карточка с указанным _id не найдена.');
       }
       if (owner !== cards.owner.toString()) {
-        throw new NotFoundError('Нет прав на удаление');
+        throw new AuthErr('Нет прав на удаление');
       }
       return res.send({ data: cards });
     })
     .catch((err) => {
-      if (err instanceof Error && err instanceof NotFoundError) {
-        return res.status(404).send({ message: err.message });
+      if (err instanceof NotFoundError || AuthErr) {
+        return next(err);
       }
-      return res.status(500).send({ message: 'Произошла ошибка' });
+      return next(new ServerErr('На сервере произошла ошибка'));
     });
 };
 
-export const likeCard = (req: IRequestUser, res: Response) => {
+export const likeCard = (req: IRequestUser, res: Response, next: NextFunction) => {
   const id = req.user?._id;
 
   return card.findByIdAndUpdate(
     req.params.id,
     { $addToSet: { likes: id } },
-    { new: true },
+    {
+      new: true,
+    },
   )
     .then((cards) => {
       if (!cards) {
@@ -58,17 +63,17 @@ export const likeCard = (req: IRequestUser, res: Response) => {
       res.send({ data: cards });
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Переданы некорректные данные для постановки/снятии лайка.' });
+      if (err instanceof NotFoundError) {
+        return next(err);
       }
-      if (err instanceof Error && err instanceof NotFoundError) {
-        return res.status(404).send({ message: 'Передан несуществующий _id карточки.' });
+      if (err instanceof mongoose.Error.CastError) {
+        return next(new ValidationErr('Переданы некорректные данные для постановки/снятии лайка.'));
       }
-      res.status(500).send({ message: 'Произошла ошибка' });
+      return next(new ServerErr('На сервере произошла ошибка'));
     });
 };
 
-export const dislikeCard = (req: IRequestUser, res: Response) => {
+export const dislikeCard = (req: IRequestUser, res: Response, next: NextFunction) => {
   const id = req.user!._id;
   return card.findByIdAndUpdate(req.params.id, { $pull: { likes: id } }, { new: true })
     .then((cards) => {
@@ -78,12 +83,12 @@ export const dislikeCard = (req: IRequestUser, res: Response) => {
       res.send({ data: cards });
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Переданы некорректные данные для постановки/снятии лайка.' });
+      if (err.name === err instanceof mongoose.Error.CastError) {
+        return next(new ValidationErr('Переданы некорректные данные для постановки/снятии лайка.'));
       }
-      if (err instanceof Error && err instanceof NotFoundError) {
-        return res.status(404).send({ message: 'Передан несуществующий _id карточки.' });
+      if (err instanceof NotFoundError) {
+        return next(err);
       }
-      res.status(500).send({ message: 'Произошла ошибка' });
+      return next(new ServerErr('На сервере произошла ошибка'));
     });
 };

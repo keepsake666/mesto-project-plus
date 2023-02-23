@@ -16,7 +16,8 @@ export default (req: IAuthRequest, res: Response, next: NextFunction) => {
   let payload;
 
   try {
-    payload = jwt.verify(token, 'some-secret-key');
+    const { JWT = 'some-secret-key' } = process.env;
+    payload = jwt.verify(token, JWT);
   } catch (err) {
     return res
       .status(401)

@@ -1,4 +1,5 @@
 import { model, Schema } from 'mongoose';
+import { valid } from '../constants/app';
 
 export interface Card {
   name: string
@@ -18,6 +19,10 @@ const cardSchema = new Schema<Card>({
   link: {
     type: String,
     required: true,
+    validate: {
+      validator: (v:string) => valid.test(v),
+      message: 'Неверная ссылка на карточку',
+    },
   },
   owner: {
     type: Schema.Types.ObjectId,

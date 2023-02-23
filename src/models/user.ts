@@ -3,6 +3,7 @@ import {
 } from 'mongoose';
 import validator from 'validator';
 import bcrypt from 'bcrypt';
+import { valid } from '../constants/app';
 
 export interface User {
   name: string
@@ -30,6 +31,10 @@ const userSchema = new Schema<User, UserModel>({
   },
   avatar: {
     type: String,
+    validate: {
+      validator: (v:string) => valid.test(v),
+      message: 'Неверная ссылка на аватар',
+    },
     required: true,
   },
   email: {
@@ -44,11 +49,12 @@ const userSchema = new Schema<User, UserModel>({
   password: {
     type: String,
     required: true,
+    select: false,
   },
 });
 
 userSchema.static('findUserByCredentials', function findUserByCredentials(email: string, password: string) {
-  return this.findOne({ email })
+  return this.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
         return Promise.reject(new Error('Неправильные почта или пароль'));
