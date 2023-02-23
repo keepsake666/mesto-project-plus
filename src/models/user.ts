@@ -26,7 +26,7 @@ const userSchema = new Schema<User, UserModel>({
   about: {
     type: String,
     minlength: 2,
-    maxlength: 200,
+    maxlength: 30,
     required: true,
   },
   avatar: {

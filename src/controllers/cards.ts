@@ -42,6 +42,9 @@ export const deleteCard = (req: IRequestUser, res: Response, next: NextFunction)
       if (err instanceof NotFoundError || AuthErr) {
         return next(err);
       }
+      if (err instanceof mongoose.Error.CastError) {
+        return next(new ValidationErr('Переданы некорректные данные для постановки/снятии лайка.'));
+      }
       return next(new ServerErr('На сервере произошла ошибка'));
     });
 };
@@ -83,7 +86,7 @@ export const dislikeCard = (req: IRequestUser, res: Response, next: NextFunction
       res.send({ data: cards });
     })
     .catch((err) => {
-      if (err.name === err instanceof mongoose.Error.CastError) {
+      if (err instanceof mongoose.Error.CastError) {
         return next(new ValidationErr('Переданы некорректные данные для постановки/снятии лайка.'));
       }
       if (err instanceof NotFoundError) {

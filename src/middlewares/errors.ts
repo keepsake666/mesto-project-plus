@@ -8,7 +8,6 @@ export default function error(
   err: IErr,
   req: Request,
   res: Response,
-  // eslint-disable-next-line no-unused-vars
   next: NextFunction,
 ) {
   const { statusCode = 500, message } = err;
@@ -19,4 +18,5 @@ export default function error(
         ? 'На сервере произошла ошибка'
         : message,
     });
+  next();
 }
