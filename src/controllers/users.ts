@@ -16,16 +16,26 @@ export const getUser = (req: Request, res: Response, next: NextFunction) => user
 
 export const creatUser = (req: Request, res: Response, next:NextFunction) => {
   const {
-    name = 'Жак-Ив Кусто',
-    about = 'Исследователь',
-    avatar = 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
+    name,
+    about,
+    avatar,
     email,
     password,
   } = req.body;
   return bcrypt.hash(password, 10).then((hash) => user.create({
     name, about, avatar, email, password: hash,
   })
-    .then((users) => res.send({ data: users }))
+    .then((users) => {
+      res.send({
+        body: {
+          name: users.name,
+          about: users.about,
+          avatar: users.avatar,
+          email: users.email,
+          _id: users._id,
+        },
+      });
+    })
     .catch((err) => {
       if (err.name === 'ValidationError') {
         return next(new ValidationErr('Переданы некорректные данные при создании пользователя.'));

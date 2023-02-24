@@ -6,10 +6,11 @@ import NotFoundError from '../errors/notFound';
 import ServerErr from '../errors/server';
 import ValidationErr from '../errors/validate';
 import AuthErr from '../errors/auth';
+import NoRights from '../errors/noRights';
 
 export const getCards = (req: Request, res: Response, next: NextFunction) => card.find({})
   .then((cards) => res.send({ data: cards }))
-  .catch(() => next(new ServerErr('На сервере произошла ошибка')));
+  .catch(next);
 
 export const postCards = (req: IRequestUser, res: Response, next: NextFunction) => {
   const { name, link } = req.body;
@@ -28,15 +29,16 @@ export const deleteCard = (req: IRequestUser, res: Response, next: NextFunction)
   const { id } = req.params;
   const owner = req.user?._id;
 
-  return card.findByIdAndRemove(id)
+  return card.findById(id)
     .then((cards) => {
       if (!cards) {
         throw new NotFoundError('Карточка с указанным _id не найдена.');
       }
       if (owner !== cards.owner.toString()) {
-        throw new AuthErr('Нет прав на удаление');
+        throw new NoRights('Нет прав на удаление');
       }
-      return res.send({ data: cards });
+      return card.findByIdAndRemove(id)
+        .then((qwe) => res.send({ data: qwe }));
     })
     .catch((err) => {
       if (err instanceof NotFoundError || AuthErr) {

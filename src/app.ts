@@ -3,6 +3,7 @@ import express, { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { celebrate, errors, Joi } from 'celebrate';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import userRouter from './routes/user';
 import cardsRouter from './routes/card';
 import auth from './middlewares/auth';
@@ -16,7 +17,7 @@ const { PORT = 3003, MONGO_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+app.use(cookieParser());
 mongoose.set('strictQuery', true);
 
 app.use(helmet());
@@ -25,7 +26,7 @@ app.use(limiter);
 app.post('/signin', celebrate({
   body: Joi.object().keys({
     email: Joi.string().required().email(),
-    password: Joi.string().required().min(3),
+    password: Joi.string().required(),
   }),
 }), login);
 app.post('/signup', celebrate({
@@ -34,7 +35,7 @@ app.post('/signup', celebrate({
     about: Joi.string().min(2).max(30),
     avatar: Joi.string().pattern(valid),
     email: Joi.string().required().email(),
-    password: Joi.string().required().min(3),
+    password: Joi.string().required(),
   }),
 }), creatUser);
 
